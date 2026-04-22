@@ -759,14 +759,8 @@ impl RolloutRecorder {
         if items.is_empty() {
             return Ok(());
         }
-        self.tx
-            .send(RolloutCmd::AddItems(items.to_vec()))
-            .await
-            .map_err(|e| {
-                self.writer_task.terminal_failure().unwrap_or_else(|| {
-                    IoError::other(format!("failed to queue rollout items: {e}"))
-                })
-            })
+        let _ = self.tx.try_send(RolloutCmd::AddItems(items.to_vec()));
+        Ok(())
     }
 
     /// Materialize the rollout file and persist all buffered items.
