@@ -1526,8 +1526,7 @@ async fn read_output<R: AsyncRead + Unpin + Send + 'static>(
                 id: stream.sub_id.clone(),
                 msg,
             };
-            #[allow(clippy::let_unit_value)]
-            let _ = stream.tx_event.send(event).await;
+            let _ = stream.tx_event.try_send(event);
             emitted_deltas += 1;
         }
 
