@@ -12,7 +12,27 @@ use tempfile::NamedTempFile;
 
 pub fn normalize_for_path_comparison(path: impl AsRef<Path>) -> std::io::Result<PathBuf> {
     let canonical = path.as_ref().canonicalize()?;
-    Ok(normalize_for_wsl(canonical))
+    Ok(normalize_for_native_workdir(normalize_for_wsl(canonical)))
+}
+
+pub fn normalize_windows_device_path(path: &str) -> Option<String> {
+    if let Some(unc) = path.strip_prefix(r"\\?\UNC\") {
+        return Some(format!(r"\\{unc}"));
+    }
+    if let Some(unc) = path.strip_prefix(r"\\.\UNC\") {
+        return Some(format!(r"\\{unc}"));
+    }
+    if let Some(path) = path.strip_prefix(r"\\?\")
+        && is_windows_drive_absolute_path(path)
+    {
+        return Some(path.to_string());
+    }
+    if let Some(path) = path.strip_prefix(r"\\.\")
+        && is_windows_drive_absolute_path(path)
+    {
+        return Some(path.to_string());
+    }
+    None
 }
 
 /// Compare paths after applying Codex's filesystem normalization.
@@ -142,6 +162,14 @@ fn normalize_for_native_workdir_with_flag(path: PathBuf, is_windows: bool) -> Pa
     } else {
         path
     }
+}
+
+fn is_windows_drive_absolute_path(path: &str) -> bool {
+    let bytes = path.as_bytes();
+    bytes.len() >= 3
+        && bytes[0].is_ascii_alphabetic()
+        && bytes[1] == b':'
+        && (bytes[2] == b'\\' || bytes[2] == b'/')
 }
 
 fn normalize_for_wsl_with_flag(path: PathBuf, is_wsl: bool) -> PathBuf {

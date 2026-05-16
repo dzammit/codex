@@ -3,7 +3,7 @@ source: tui/src/history_cell.rs
 expression: rendered
 ---
 
-  [Image #1]
-  [Image #2]
+user › [Image #1]
+       [Image #2]
 
-› describe both
+       describe both

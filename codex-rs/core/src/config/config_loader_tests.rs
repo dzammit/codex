@@ -46,6 +46,17 @@ fn config_error_from_io(err: &std::io::Error) -> &ConfigError {
         .expect("expected ConfigLoadError")
 }
 
+#[cfg(windows)]
+#[test]
+fn project_trust_matches_windows_device_path_alias() {
+    let projects_trust = HashMap::from([(r"\\?\D:\Dev\Codex".to_string(), TrustLevel::Trusted)]);
+
+    assert_eq!(
+        super::project_trust_for_lookup_key(&projects_trust, r"d:\dev\codex"),
+        Some((r"\\?\D:\Dev\Codex".to_string(), TrustLevel::Trusted))
+    );
+}
+
 async fn make_config_for_test(
     codex_home: &Path,
     project_path: &Path,

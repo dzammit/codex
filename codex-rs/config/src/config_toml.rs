@@ -51,6 +51,7 @@ use codex_protocol::permissions::NetworkSandboxPolicy;
 use codex_protocol::protocol::AskForApproval;
 use codex_utils_absolute_path::AbsolutePathBuf;
 use codex_utils_path::normalize_for_path_comparison;
+use codex_utils_path::normalize_windows_device_path;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Deserializer;
@@ -855,7 +856,9 @@ fn normalized_project_lookup_keys(path: &Path) -> Vec<String> {
 
 fn normalize_project_lookup_key(key: String) -> String {
     if cfg!(windows) {
-        key.to_ascii_lowercase()
+        normalize_windows_device_path(&key)
+            .unwrap_or(key)
+            .to_ascii_lowercase()
     } else {
         key
     }
@@ -957,6 +960,7 @@ pub fn validate_oss_provider(provider: &str) -> std::io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use codex_protocol::config_types::TrustLevel;
     use pretty_assertions::assert_eq;
 
     const WORKSPACE_ID_A: &str = "123e4567-e89b-42d3-a456-426614174000";
@@ -1004,5 +1008,25 @@ mod tests {
         let message = err.to_string();
         assert!(message.contains("TOML list of strings"));
         assert!(message.contains("comma-separated strings are not supported"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn active_project_matches_windows_device_path_alias() {
+        let trusted = ProjectConfig {
+            trust_level: Some(TrustLevel::Trusted),
+        };
+        let config = ConfigToml {
+            projects: Some(HashMap::from([(
+                r"\\?\D:\Dev\Codex".to_string(),
+                trusted.clone(),
+            )])),
+            ..Default::default()
+        };
+
+        assert_eq!(
+            config.get_active_project(Path::new(r"d:\dev\codex"), None),
+            Some(trusted)
+        );
     }
 }

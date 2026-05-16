@@ -12,6 +12,39 @@
 
 The GitHub Release also contains a [DotSlash](https://dotslash-cli.com/) file for the Codex CLI named `codex`. Using a DotSlash file makes it possible to make a lightweight commit to source control to ensure all contributors use the same version of an executable, regardless of what platform they use for development.
 
+### Windows portable USB install
+
+If you want a self-contained Windows install on a USB drive, use the portable installer instead of a global install:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\install\install-portable.ps1 H:\PortableCodex
+```
+
+This creates:
+
+- `H:\PortableCodex\bin\` with `codex.exe`, helper binaries, and `rg.exe`
+- `H:\PortableCodex\data\` for `CODEX_HOME`
+- `H:\PortableCodex\codex_portable.bat` as the launcher
+
+The launcher sets `CODEX_HOME` to the local `data` directory, so the portable folder keeps Codex state together:
+
+- `data\auth.json` for CLI auth when file-backed auth is enabled
+- `data\.credentials.json` for MCP OAuth fallback credentials
+- `data\config.toml`
+- `data\log\`
+- `data\sessions\`
+- `data\history.jsonl`
+
+The installer also writes `data\config.toml` with:
+
+```toml
+cli_auth_credentials_store_mode = "file"
+mcp_oauth_credentials_store_mode = "file"
+```
+
+That forces auth to stay in the portable folder instead of the machine keyring, which is usually what you want for a USB install.
+
 ### Build from source
 
 ```bash

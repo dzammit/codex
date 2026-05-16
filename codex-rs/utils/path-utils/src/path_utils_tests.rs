@@ -54,6 +54,7 @@ mod wsl {
 
 mod native_workdir {
     use super::super::normalize_for_native_workdir_with_flag;
+    use super::super::normalize_windows_device_path;
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
 
@@ -76,6 +77,22 @@ mod native_workdir {
             normalize_for_native_workdir_with_flag(path.clone(), /*is_windows*/ false);
 
         assert_eq!(normalized, path);
+    }
+
+    #[test]
+    fn windows_device_paths_strip_device_prefix() {
+        assert_eq!(
+            normalize_windows_device_path(r"\\?\D:\Dev\Codex"),
+            Some(r"D:\Dev\Codex".to_string())
+        );
+        assert_eq!(
+            normalize_windows_device_path(r"\\.\D:\Dev\Codex"),
+            Some(r"D:\Dev\Codex".to_string())
+        );
+        assert_eq!(
+            normalize_windows_device_path(r"\\?\UNC\server\share\Codex"),
+            Some(r"\\server\share\Codex".to_string())
+        );
     }
 }
 
