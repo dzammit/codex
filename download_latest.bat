@@ -67,11 +67,11 @@ if errorlevel 1 (
     echo Warning: could not patch version in %CARGO_TOML%. Continuing with 0.0.0.
 )
 
-cargo build --release -p codex-cli
+cargo build --profile release-fast -p codex-cli
 set BUILD_ERR=%errorlevel%
 
 :: Restore version to 0.0.0 so git stays clean
-powershell -Command "(Get-Content '%CARGO_TOML%') -replace 'version = \"[^\"]+\"', 'version = \"0.0.0\"' | Set-Content '%CARGO_TOML%' -NoNewline:$false"
+powershell -Command "(Get-Content '%CARGO_TOML%') -replace 'version = \"%CUSTOM_VERSION%\"', 'version = \"0.0.0\"' | Set-Content '%CARGO_TOML%'"
 
 cd ..
 if %BUILD_ERR% neq 0 exit /b %BUILD_ERR%
