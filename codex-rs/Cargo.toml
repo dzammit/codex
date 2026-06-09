@@ -507,7 +507,7 @@ codegen-units = 1
 [profile.release-fast]
 inherits = "release"
 lto = false
-codegen-units = 16
+codegen-units = 24
 strip = false
 
 [profile.profiling]
