@@ -30,8 +30,8 @@ if errorlevel 1 (
 git switch %BRANCH%
 if errorlevel 1 exit /b 1
 
-:: Fetch the latest code from the official repository
-git fetch origin
+:: Fetch the latest code and tags from the official repository
+git fetch origin --tags
 if errorlevel 1 exit /b 1
 
 :: Rebase (re-apply) our local fix on top of the latest main branch
@@ -51,8 +51,30 @@ echo ===================================================
 echo Rebuilding Codex CLI...
 echo ===================================================
 cd codex-rs
-cargo build --release --bin codex
+
+:: Detect version from latest stable rust-v* tag
+set "CARGO_TOML=Cargo.toml"
+FOR /F "tokens=*" %%T IN ('powershell -Command "git tag --sort=-version:refname | Where-Object { $_ -match '^rust-v\d' -and $_ -notmatch 'alpha|beta|rc' } | Select-Object -First 1"') DO SET "LATEST_TAG=%%T"
+if defined LATEST_TAG (
+    set "CUSTOM_VERSION=%LATEST_TAG:rust-v=%-local"
+) else (
+    set "CUSTOM_VERSION=0.0.0-local"
+    echo Warning: could not detect version from tags, using 0.0.0-local.
+)
+echo Stamping version: %CUSTOM_VERSION%
+powershell -Command "(Get-Content '%CARGO_TOML%') -replace 'version = \"0\.0\.0\"', 'version = \"%CUSTOM_VERSION%\"' | Set-Content '%CARGO_TOML%'"
+if errorlevel 1 (
+    echo Warning: could not patch version in %CARGO_TOML%. Continuing with 0.0.0.
+)
+
+cargo build --release -p codex-cli
+set BUILD_ERR=%errorlevel%
+
+:: Restore version to 0.0.0 so git stays clean
+powershell -Command "(Get-Content '%CARGO_TOML%') -replace 'version = \"[^\"]+\"', 'version = \"0.0.0\"' | Set-Content '%CARGO_TOML%' -NoNewline:$false"
+
 cd ..
+if %BUILD_ERR% neq 0 exit /b %BUILD_ERR%
 
 echo.
 echo Update and rebuild complete! Your local fix has been preserved.
